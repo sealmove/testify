@@ -1,4 +1,4 @@
-# testify
+# testify [WIP]
 File-based unit testing runner for Nim
 
 This projects covers the need of a unit testing system which can produce a report out of multiple files/modules.  
