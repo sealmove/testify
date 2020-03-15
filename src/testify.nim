@@ -6,7 +6,9 @@ type
     retc: int
     retr: int
 
-var units = newSeqOfCap[Unit](paramCount())
+var
+  units = newSeqOfCap[Unit](paramCount())
+  suites = newSeqOfCap[XmlNode](paramCount())
 
 for f in commandLineParams():
   var u = Unit(name: splitFile(f).name)
@@ -22,4 +24,8 @@ for u in units:
   echo "\tretc: " & $u.retc
   echo "\tretr: " & $u.retr
 
+for u in units:
+  var e = newElement("testsuite")
+  e.attrs = {}
+  suites.add(
 # echo newXmlTree("testsuites", [])
