@@ -1,4 +1,4 @@
-# testify [WIP]
+# testify
 Compile-Run-Report helper for Nim
 
 This project was born out of the need of an external tool that produces a report out of multiple Nim modules/files.
