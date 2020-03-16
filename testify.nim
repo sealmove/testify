@@ -33,8 +33,7 @@ for d in commandLineParams()[1..^1]:
       casename = splitFile(f).name
       testcase = newElement("testcase")
 
-#    let c = execShellCmd(&"nim c --outdir:{binDir} {f} >/dev/null 2>&1")
-    let c = execShellCmd(&"nim c --outdir:{binDir} {f}")
+    let c = execShellCmd(&"nim c --outdir:{binDir} {f} >/dev/null 2>&1")
     if c != 0:
       inc(errors)
       stdout.write &"  {R}[ER]{D} " & casename & "\n"
