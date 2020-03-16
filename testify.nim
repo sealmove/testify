@@ -1,4 +1,4 @@
-import os, streams, xmltree, strformat, strutils
+import os, streams, xmltree, strformat, strutils, times
 
 const
   R = "\e[31;1m"
@@ -25,24 +25,28 @@ for d in commandLineParams()[1..^1]:
 
   stdout.write &"{B}[Suite]{D} " & suitename & "\n"
 
-  for f in walkFiles(d / "t*.nim"):
+  for f in walkFiles(d / "*.nim"):
     inc(tests)
 
     var
       casename = splitFile(f).name
-      testcase = newXmlTree("testcase", [], {"name": casename}.toXmlAttributes)
+      testcase = newElement("testcase")
 
     let c = execShellCmd(&"nim c --outdir:{binDir} {f} >/dev/null 2>&1")
     if c != 0:
       inc(errors)
       stdout.write &"  {R}[ER]{D} " & casename & "\n"
+      testcase.attrs = {"name": casename, "time": "0.00000000"}.toXmlAttributes
       testcase.add(newXmlTree("failure", [],
                               {"message": "compile error"}.toXmlAttributes))
     else:
       let
         chop = splitFile(f)
         exe = chop.dir / "bin" / chop.name
+        startTime = epochTime()
         r = execShellCmd(&"{exe} >/dev/null 2>&1")
+        duration = epochTime() - startTime
+      testcase.attrs = {"name": casename, "time": $duration}.toXmlAttributes
       if r != 0:
         stdout.write &"  {Y}[FL]{D} " & casename & "\n"
         inc(failures)
