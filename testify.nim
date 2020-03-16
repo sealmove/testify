@@ -16,6 +16,7 @@ var testsuites = newElement("testsuites")
 
 for d in commandLineParams()[1..^1]:
   let binDir = d / "bin"
+  createDir(binDir)
   var
     suitename = lastPathPart(d)
     testsuite = newElement("testsuite")
