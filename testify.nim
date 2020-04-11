@@ -26,11 +26,11 @@ for d in commandLineParams()[1..^1]:
 
   stdout.write &"{B}[Suite]{D} " & suitename & "\n"
 
-  for f in walkFiles(d / "*.nim"):
+  for f in walkFiles(d / "t*.nim"):
     inc(tests)
 
     var
-      casename = splitFile(f).name
+      casename = splitFile(f).name[1..^1]
       testcase = newElement("testcase")
 
     let c = execShellCmd(&"nim c --outdir:{binDir} {f} >/dev/null 2>&1")
