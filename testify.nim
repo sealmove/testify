@@ -38,8 +38,7 @@ for d in commandLineParams()[1..^1]:
       inc(errors)
       stdout.write &"  {R}[ER]{D} " & casename[1..^1] & "\n"
       testcase.attrs = {"name": casename, "time": "0.00000000"}.toXmlAttributes
-      testcase.add(newXmlTree("failure", [],
-                              {"message": "compile error"}.toXmlAttributes))
+      testcase.add(newElement("format_build_failed"))
     else:
       let
         chop = splitFile(f)
@@ -51,7 +50,7 @@ for d in commandLineParams()[1..^1]:
       if r != 0:
         stdout.write &"  {Y}[FL]{D} " & casename[1..^1] & "\n"
         inc(failures)
-        testcase.add(newElement("failure"))
+        testcase.add(newElement("failed"))
       else:
         stdout.write &"  {G}[OK]{D} " & casename[1..^1] & "\n"
     testsuite.add(testcase)
