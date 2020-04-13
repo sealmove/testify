@@ -33,7 +33,7 @@ for d in commandLineParams()[1..^1]:
       casename = splitFile(f).name
       testcase = newElement("testcase")
 
-    let (co, cc) = execCmdEx(&"nim c --outdir:{binDir} {f}")
+    let (co, cc) = execCmdEx(&"nim c --hints:off -w:off --outdir:{binDir} {f}")
     if cc != 0:
       inc(errors)
       stdout.write &"  {R}[ER]{D} " & casename[1..^1] & "\n"
