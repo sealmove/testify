@@ -33,7 +33,7 @@ for d in commandLineParams()[1..^1]:
       casename = splitFile(f).name
       testcase = newElement("testcase")
 
-    let (co, cc) = execCmdEx(&"nim c --outdir:{binDir} {f} >/dev/null 2>&1")
+    let (co, cc) = execCmdEx(&"nim c --outdir:{binDir} {f}")
     if cc != 0:
       inc(errors)
       stdout.write &"  {R}[ER]{D} " & casename[1..^1] & "\n"
@@ -45,7 +45,7 @@ for d in commandLineParams()[1..^1]:
         chop = splitFile(f)
         exe = chop.dir / "bin" / chop.name
         startTime = epochTime()
-        (ro, rc) = execCmdEx(&"{exe} >/dev/null 2>&1")
+        (ro, rc) = execCmdEx(&"{exe}")
         duration = epochTime() - startTime
       testcase.attrs = {"name": casename, "time": $duration}.toXmlAttributes
       if rc != 0:
