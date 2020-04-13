@@ -1,4 +1,4 @@
-import os, streams, xmltree, strformat, strutils, times
+import os, osproc, streams, xmltree, strformat, strutils, times
 
 const
   R = "\e[31;1m"
@@ -33,26 +33,26 @@ for d in commandLineParams()[1..^1]:
       casename = splitFile(f).name
       testcase = newElement("testcase")
 
-    let c = execShellCmd(&"nim c --outdir:{binDir} {f} >/dev/null 2>&1")
-    if c != 0:
+    let (co, cc) = execCmdEx(&"nim c --outdir:{binDir} {f} >/dev/null 2>&1")
+    if cc != 0:
       inc(errors)
       stdout.write &"  {R}[ER]{D} " & casename[1..^1] & "\n"
       testcase.attrs = {"name": casename, "time": "0.00000000"}.toXmlAttributes
       testcase.add(newXmlTree("failure", [],
-                              {"message": "format_build_failed"}.toXmlAttributes))
+                              {"message": co}.toXmlAttributes))
     else:
       let
         chop = splitFile(f)
         exe = chop.dir / "bin" / chop.name
         startTime = epochTime()
-        r = execShellCmd(&"{exe} >/dev/null 2>&1")
+        (ro, rc) = execCmdEx(&"{exe} >/dev/null 2>&1")
         duration = epochTime() - startTime
       testcase.attrs = {"name": casename, "time": $duration}.toXmlAttributes
-      if r != 0:
+      if rc != 0:
         stdout.write &"  {Y}[FL]{D} " & casename[1..^1] & "\n"
         inc(failures)
         testcase.add(newXmlTree("failure", [],
-                                {"message": "failed"}.toXmlAttributes))
+                                {"message": ro}.toXmlAttributes))
       else:
         stdout.write &"  {G}[OK]{D} " & casename[1..^1] & "\n"
     testsuite.add(testcase)
