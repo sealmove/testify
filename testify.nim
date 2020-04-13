@@ -51,8 +51,8 @@ for d in commandLineParams()[1..^1]:
       if r != 0:
         stdout.write &"  {Y}[FL]{D} " & casename[1..^1] & "\n"
         inc(failures)
-      testcase.add(newXmlTree("failure", [],
-                              {"message": "failed"}.toXmlAttributes))
+        testcase.add(newXmlTree("failure", [],
+                                {"message": "failed"}.toXmlAttributes))
       else:
         stdout.write &"  {G}[OK]{D} " & casename[1..^1] & "\n"
     testsuite.add(testcase)
