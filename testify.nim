@@ -76,7 +76,7 @@ proc main =
   if report == nil:
     quit("Failed to create output file: " & params[0])
 
-  report.write(suites)
+  report.write($suites)
   close(report)
 
 main()
