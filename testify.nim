@@ -15,9 +15,10 @@ proc main =
         "  > ./testify output_path suite_dir1, suite_dir2, ...\n")
 
   let suites = newElement("testsuites")
+  let curDir = getCurrentDir()
 
   for i in 1 ..< params.len:
-    let suiteDir = getCurrentDir() / params[i]
+    let suiteDir = curDir / params[i]
     stdout.write suiteDir, "\n"
     setCurrentDir(suiteDir)
     createDir("bin")
@@ -72,6 +73,7 @@ proc main =
         &"  {stError}[ER]{resetCode} {errors:3}\n",
         "----------------------------------------\n"
 
+  setCurrentDir(curDir)
   let report = newFileStream(params[0], fmWrite)
   if report == nil:
     quit("Failed to create output file: " & params[0])
