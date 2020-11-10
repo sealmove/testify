@@ -9,7 +9,7 @@ const
 
 proc main =
   let params = commandLineParams()
-  if params.len < 2:
+  if "--help" in params or "-h" in params or params.len < 2:
     quit("Compile-Run-Report helper for Nim\n\n" &
         "Command line syntax: \n\n" &
         "  > ./testify output_path suite_dir1, suite_dir2, ...\n")
