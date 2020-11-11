@@ -14,14 +14,17 @@ proc main =
         "Command line syntax: \n\n" &
         "  > ./testify output_path suite_dir1, suite_dir2, ...\n")
 
-  let suites = newElement("testsuites")
-  let curDir = getCurrentDir()
+  let
+    suites = newElement("testsuites")
+    curDir = getCurrentDir()
+    binDir = "bin"
+    nim = getCurrentCompilerExe()
 
   for i in 1 ..< params.len:
     let suiteDir = curDir / params[i]
     stdout.write suiteDir, "\n"
     setCurrentDir(suiteDir)
-    createDir("bin")
+    createDir(binDir)
 
     let
       suiteName = lastPathPart(params[i])
@@ -37,16 +40,16 @@ proc main =
       let
         (testDir, testName, _) = splitFile(f)
         test = newElement("testcase")
-        (co, cc) = execCmdEx("nim c --hints:off -w:off --outdir:bin " & f)
+        (co, cc) = execCmdEx(&"{nim} c --hints:off -w:off --outdir:{binDir} {f}")
 
       if cc != 0:
         stdout.write &"  {stError}[ER]{resetCode} {testName}\n"
         test.attrs = {"name": testName, "time": "0.00000000"}.toXmlAttributes
-        test.add(newXmlTree("failure", [], {"message": co}.toXmlAttributes))
+        test.add(newXmlTree("failure", [], {"message": xmltree.escape(co)}.toXmlAttributes))
         inc(errors)
       else:
         let
-          exe = testDir / "bin" / testName
+          exe = testDir / binDir / testName.addFileExt(ExeExt)
           startTime = epochTime()
           (ro, rc) = execCmdEx(exe)
           duration = epochTime() - startTime
@@ -55,7 +58,7 @@ proc main =
             "time": formatFloat(duration, ffDecimal, 8)}.toXmlAttributes
         if rc != 0:
           stdout.write &"  {stFailure}[FL]{resetCode} {testName}\n"
-          test.add(newXmlTree("failure", [], {"message": ro}.toXmlAttributes))
+          test.add(newXmlTree("failure", [], {"message": xmltree.escape(ro)}.toXmlAttributes))
           inc(failures)
         else:
           stdout.write &"  {stSuccess}[OK]{resetCode} {testName}\n"
