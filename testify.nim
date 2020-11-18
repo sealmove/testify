@@ -1,4 +1,11 @@
-import os, osproc, streams, xmltree, strformat, strutils, terminal, times
+import os, osproc, streams, xmltree, strformat, strutils, times
+
+const
+  stError = "\e[31;1m"
+  stSuccess = "\e[32;1m"
+  stFailure = "\e[33;1m"
+  stSuite = "\e[34;1m"
+  resetCode = "\e[0m"
 
 proc main =
   let params = commandLineParams()
@@ -15,19 +22,20 @@ proc main =
 
   for i in 1 ..< params.len:
     let suiteDir = curDir / params[i]
-    stdout.write suiteDir
+    stdout.write suiteDir, "\n"
     setCurrentDir(suiteDir)
     createDir(binDir)
 
     let
       suiteName = lastPathPart(params[i])
       suite = newElement("testsuite")
+
     var
       tests = 0
       failures = 0
       errors = 0
 
-    stdout.styledWrite(styleBright, fgBlue, "\n[Suite] ", resetStyle, suiteName)
+    stdout.write &"{stSuite}[Suite]{resetCode} {suiteName}\n"
 
     for f in walkFiles("t*.nim"):
       let
@@ -36,9 +44,9 @@ proc main =
         (co, cc) = execCmdEx(&"{nim} c --hints:off -w:off --outdir:{binDir} {f}")
 
       if cc != 0:
-        stdout.styledWrite(styleBright, fgRed, "\n  [ER] ", resetStyle, testName)
+        stdout.write &"  {stError}[ER]{resetCode} {testName}\n"
         test.attrs = {"name": testName, "time": "0.00000000"}.toXmlAttributes
-        test.add(newXmlTree("error", [], {"message": xmltree.escape(co)}.toXmlAttributes))
+        test.add(newXmlTree("failure", [], {"message": xmltree.escape(co)}.toXmlAttributes))
         inc(errors)
       else:
         let
@@ -50,11 +58,11 @@ proc main =
         test.attrs = {"name": testName,
             "time": formatFloat(duration, ffDecimal, 8)}.toXmlAttributes
         if rc != 0:
-          stdout.styledWrite(styleBright, fgYellow, "\n  [FL] ", resetStyle, testName)
+          stdout.write &"  {stFailure}[FL]{resetCode} {testName}\n"
           test.add(newXmlTree("failure", [], {"message": xmltree.escape(ro)}.toXmlAttributes))
           inc(failures)
         else:
-          stdout.styledWrite(styleBright, fgGreen, "\n  [OK] ", resetStyle, testName)
+          stdout.write &"  {stSuccess}[OK]{resetCode} {testName}\n"
 
       suite.add(test)
       inc(tests)
@@ -63,11 +71,11 @@ proc main =
         "failures": $failures}.toXmlAttributes
     suites.add(suite)
 
-    stdout.styledWrite "\n----------------------------------------",
-        styleBright, fgGreen, "\n  [OK] ", resetStyle, &"{(tests - errors - failures):3}",
-        styleBright, fgYellow, "\n  [FL] ", resetStyle, &"{failures:3}",
-        styleBright, fgRed, "\n  [ER] ", resetStyle, &"{errors:3}",
-        "\n----------------------------------------\n"
+    stdout.write "----------------------------------------\n",
+        &"  {stSuccess}[OK]{resetCode} {(tests - errors - failures):3}\n",
+        &"  {stFailure}[FL]{resetCode} {failures:3}\n",
+        &"  {stError}[ER]{resetCode} {errors:3}\n",
+        "----------------------------------------\n"
 
   setCurrentDir(curDir)
   let report = newFileStream(params[0], fmWrite)
