@@ -1,74 +1,88 @@
 import os, osproc, streams, xmltree, strformat, strutils, times
 
 const
-  R = "\e[31;1m"
-  G = "\e[32;1m"
-  Y = "\e[33;1m"
-  B = "\e[34;1m"
-  D = "\e[0m"
+  stError = "\e[31;1m"
+  stSuccess = "\e[32;1m"
+  stFailure = "\e[33;1m"
+  stSuite = "\e[34;1m"
+  resetCode = "\e[0m"
 
-if paramCount() < 1:
-  echo "Too few arguments"
-  quit QuitFailure
+proc main =
+  let params = commandLineParams()
+  if "--help" in params or "-h" in params or params.len < 2:
+    quit("Compile-Run-Report helper for Nim\n\n" &
+        "Command line syntax: \n\n" &
+        "  > ./testify output_path suite_dir1, suite_dir2, ...\n")
 
-let report = newFileStream(paramStr(1), fmWrite)
-var testsuites = newElement("testsuites")
+  let
+    suites = newElement("testsuites")
+    curDir = getCurrentDir()
+    binDir = "bin"
+    nim = getCurrentCompilerExe()
 
-for d in commandLineParams()[1..^1]:
-  echo (getCurrentDir() / &"{d}")
-  setCurrentDir(getCurrentDir() / &"{d}")
-  createDir("bin")
+  for i in 1 ..< params.len:
+    let suiteDir = curDir / params[i]
+    stdout.write suiteDir, "\n"
+    setCurrentDir(suiteDir)
+    createDir(binDir)
 
-  var
-    suitename = lastPathPart(d)
-    testsuite = newElement("testsuite")
-    tests: int
-    failures: int
-    errors: int
-
-  stdout.write &"{B}[Suite]{D} " & suitename & "\n"
-
-  for f in walkFiles("t*.nim"):
-    inc(tests)
+    let
+      suiteName = lastPathPart(params[i])
+      suite = newElement("testsuite")
 
     var
-      casename = splitFile(f).name
-      testcase = newElement("testcase")
+      tests = 0
+      failures = 0
+      errors = 0
 
-    let (co, cc) = execCmdEx(&"nim c --hints:off -w:off --outdir:bin {f}")
-    if cc != 0:
-      inc(errors)
-      stdout.write &"  {R}[ER]{D} " & casename[1..^1] & "\n"
-      testcase.attrs = {"name": casename, "time": "0.00000000"}.toXmlAttributes
-      testcase.add(newXmlTree("failure", [],
-                              {"message": co}.toXmlAttributes))
-    else:
+    stdout.write &"{stSuite}[Suite]{resetCode} {suiteName}\n"
+
+    for f in walkFiles("t*.nim"):
       let
-        chop = splitFile(f)
-        exe = chop.dir / "bin" / chop.name
-        startTime = epochTime()
-        (ro, rc) = execCmdEx(&"{exe}")
-        duration = epochTime() - startTime
-      testcase.attrs = {"name": casename, "time": $duration}.toXmlAttributes
-      if rc != 0:
-        stdout.write &"  {Y}[FL]{D} " & casename[1..^1] & "\n"
-        inc(failures)
-        testcase.add(newXmlTree("failure", [],
-                                {"message": ro}.toXmlAttributes))
+        (testDir, testName, _) = splitFile(f)
+        test = newElement("testcase")
+        (co, cc) = execCmdEx(&"{nim} c --hints:off -w:off --outdir:{binDir} {f}")
+
+      if cc != 0:
+        stdout.write &"  {stError}[ER]{resetCode} {testName}\n"
+        test.attrs = {"name": testName, "time": "0.00000000"}.toXmlAttributes
+        test.add(newXmlTree("failure", [], {"message": xmltree.escape(co)}.toXmlAttributes))
+        inc(errors)
       else:
-        stdout.write &"  {G}[OK]{D} " & casename[1..^1] & "\n"
-    testsuite.add(testcase)
-  testsuite.attrs = {"name": suitename,
-                     "tests": $tests,
-                     "errors": $errors,
-                     "failures": $failures}.toXmlAttributes
-  testsuites.add(testsuite)
+        let
+          exe = testDir / binDir / testName.addFileExt(ExeExt)
+          startTime = epochTime()
+          (ro, rc) = execCmdEx(exe)
+          duration = epochTime() - startTime
 
-  echo "----------------------------------------\n" &
-       &"  {G}[OK]{D} {(tests - errors - failures).intToStr(3)}\n" &
-       &"  {Y}[FL]{D} {failures.intToStr(3)}\n" &
-       &"  {R}[ER]{D} {errors.intToStr(3)}\n" &
-       "----------------------------------------\n"
+        test.attrs = {"name": testName,
+            "time": formatFloat(duration, ffDecimal, 8)}.toXmlAttributes
+        if rc != 0:
+          stdout.write &"  {stFailure}[FL]{resetCode} {testName}\n"
+          test.add(newXmlTree("failure", [], {"message": xmltree.escape(ro)}.toXmlAttributes))
+          inc(failures)
+        else:
+          stdout.write &"  {stSuccess}[OK]{resetCode} {testName}\n"
 
-report.write($testsuites)
-close(report)
+      suite.add(test)
+      inc(tests)
+
+    suite.attrs = {"name": suiteName, "tests": $tests, "errors": $errors,
+        "failures": $failures}.toXmlAttributes
+    suites.add(suite)
+
+    stdout.write "----------------------------------------\n",
+        &"  {stSuccess}[OK]{resetCode} {(tests - errors - failures):3}\n",
+        &"  {stFailure}[FL]{resetCode} {failures:3}\n",
+        &"  {stError}[ER]{resetCode} {errors:3}\n",
+        "----------------------------------------\n"
+
+  setCurrentDir(curDir)
+  let report = newFileStream(params[0], fmWrite)
+  if report == nil:
+    quit("Failed to create output file: " & params[0])
+
+  report.write($suites)
+  close(report)
+
+main()
