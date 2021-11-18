@@ -44,7 +44,7 @@ proc main =
         (co, cc) = execCmdEx(&"{nim} c --hints:off -w:off --outdir:{binDir} {f}")
 
       if cc != 0:
-        echo &"  {stError}[ER]{resetCode} {testName}\n"
+        echo &"  {stError}[ER]{resetCode} {testName}"
         test.attrs = {"name": testName, "time": "0.00000000"}.toXmlAttributes
         test.add(newXmlTree("failure", [], {"message": xmltree.escape(co)}.toXmlAttributes))
         inc(errors)
